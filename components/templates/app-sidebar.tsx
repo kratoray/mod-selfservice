@@ -113,6 +113,11 @@ const data = {
           url: '/voorbeelden/sonner',
           icon: Bell,
         },
+        {
+          title: 'Sheet',
+          url: '/voorbeelden/sheet',
+          icon: Command,
+        },
       ],
     },
   ],
