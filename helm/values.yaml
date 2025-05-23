@@ -1,0 +1,30 @@
+image:
+  registry: 'registry.mindef.nl'
+  repository: 'dbdaap/selfservice/web'
+  tag: 'latest'
+
+ingress:
+  url: 'web.dev.dbdaap.mindef.nl'
+
+git:
+  commitHash: ''
+
+api:
+  url: ''
+  cadokUrl: ''
+  helmRepo: 'ssp'
+
+nextauth:
+  secret: 'change-me'
+
+keycloak:
+  issuer: 'https://auth.ontwikkel.dbdaap.mindef.nl/realms/DBDAAP'
+  clientId: 'dbdaap-selfservice'
+  clientSecret: 'change-me'
+
+gurobi:
+  url: https://gurobi.ontwikkel.dbdaap.mindef.nl
+
+strapi:
+  url:
+  apiToken:

@@ -1,0 +1,6 @@
+// Backup of __auth.config.ts before removal
+// ...full original content below...
+import { Account, AuthOptions } from 'next-auth';
+import { JWT } from 'next-auth/jwt';
+import KeycloakProvider from 'next-auth/providers/keycloak';
+// ...rest of the file content from __auth.config.ts...

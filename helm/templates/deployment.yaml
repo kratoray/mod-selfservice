@@ -1,0 +1,63 @@
+apiVersion: 'apps/v1'
+kind: 'Deployment'
+metadata:
+  labels:
+    app: '{{ .Release.Name }}'
+    version: '{{ .Values.git.commitHash }}'
+  name: '{{ .Release.Name }}'
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: '{{ .Release.Name }}'
+  template:
+    metadata:
+      labels:
+        app: '{{ .Release.Name }}'
+        version: '{{ .Values.git.commitHash }}'
+        random: { { randAlpha 5 } }
+    spec:
+      containers:
+        - name: '{{ .Release.Name }}'
+          image: '{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}'
+          imagePullPolicy: 'Always'
+          volumeMounts:
+            - name: 'env'
+              mountPath: '/app/.env'
+              subPath: '.env'
+              readOnly: true
+          resources:
+            requests:
+              memory: '512Mi'
+              cpu: '0.5'
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: '/'
+              port: 8080
+              scheme: 'HTTP'
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: '/'
+              port: 8080
+              scheme: 'HTTP'
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 2
+            timeoutSeconds: 5
+      volumes:
+        - name: 'env'
+          secret:
+            secretName: '{{ .Release.Name }}'
+            items:
+              - key: '.env'
+                path: '.env'
+      imagePullSecrets:
+        - name: 'registry-mindef-nl'
+      restartPolicy: 'Always'
+      terminationGracePeriodSeconds: 30

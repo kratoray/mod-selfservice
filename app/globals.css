@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: var(--font-rijksoverheid-sans), sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+
+    --primary: 28 100% 44%;
+    --primary-foreground: 0 0% 97%;
+
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 0 0% 12%;
+
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 25%;
+
+    --accent: 210 99% 30%;
+    --accent-foreground: 0 0% 97%;
+
+    --destructive: 5 96% 45%;
+    --destructive-foreground: 0 0% 97%;
+
+    --success: 105 84% 27%;
+    --success-foreground: 0 0% 97%;
+
+    --warning: 44 100% 55%;
+    --warning-foreground: 0 0% 12%;
+
+    --border: 0 0% 80%;
+    --input: 0 0% 80%;
+    --ring: 0 0% 10%;
+
+    --radius: 0.5rem;
+    --sidebar-background: #154273; /* Rijkshuisstijl lintblauw */
+    --sidebar-foreground: #ffffff; /* Wit */
+    --sidebar-primary: #1e1e1e; /* Donkergrijs */
+    --sidebar-primary-foreground: #ffffff; /* Wit */
+    --sidebar-accent: #e17000; /* Oranje */
+    --sidebar-accent-foreground: #ffffff; /* Wit */
+    --sidebar-border: #d9d9d9; /* Grijs */
+    --sidebar-ring: #b3b3b3; /* Grijs */
+  }
+  .dark {
+    --background: 0 0% 10%;
+    --foreground: 0 0% 97%;
+
+    --card: 0 0% 15%;
+    --card-foreground: 0 0% 97%;
+
+    --popover: 0 0% 15%;
+    --popover-foreground: 0 0% 97%;
+
+    --primary: 28 100% 44%;
+    --primary-foreground: 0 0% 97%;
+
+    --secondary: 0 0% 21%;
+    --secondary-foreground: 0 0% 94%;
+
+    --muted: 0 0% 21%;
+    --muted-foreground: 0 0% 64%;
+
+    --accent: 210 99% 30%;
+    --accent-foreground: 0 0% 94%;
+
+    --destructive: 5 96% 45%;
+    --destructive-foreground: 0 0% 97%;
+
+    --success: 105 84% 27%;
+    --success-foreground: 0 0% 97%;
+
+    --warning: 44 100% 55%;
+    --warning-foreground: 0 0% 12%;
+
+    --border: 0 0% 25%;
+    --input: 0 0% 25%;
+    --ring: 0 0% 83%;
+    --chart-1: #4b0082; /* Indigo */
+    --chart-2: #00bfff; /* Lichtblauw */
+    --chart-3: #ffcc00; /* Geel */
+    --chart-4: #ff69b4; /* Hot Pink */
+    --chart-5: #ff7f50; /* Koraal */
+    --sidebar-background: #154273; /* Rijkshuisstijl lintblauw */
+    --sidebar-foreground: #ffffff; /* Wit */
+    --sidebar-primary: #1e1e1e; /* Donkergrijs */
+    --sidebar-primary-foreground: #ffffff; /* Wit */
+    --sidebar-accent: #e17000; /* Oranje */
+    --sidebar-accent-foreground: #ffffff; /* Wit */
+    --sidebar-border: #1a1a1a; /* Donkergrijs */
+    --sidebar-ring: #b3b3b3; /* Grijs */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .menu-item {
+    color: #ffffff; /* Witte tekstkleur */
+    transition: color 0.3s; /* Voor een vloeiende overgang */
+  }
+
+  .menu-item:hover,
+  .menu-item.active {
+    color: #e17000; /* Oranje kleur bij hover of actieve status */
+  }
+}

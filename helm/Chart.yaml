@@ -1,0 +1,4 @@
+apiVersion: 'v1'
+name: 'dbdaap-selfservice-frontend'
+version: '1.0.0'
+description: 'Front-end van het DBDAAP Selfservice Portaal'

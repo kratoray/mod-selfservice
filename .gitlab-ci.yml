@@ -1,0 +1,109 @@
+stages:
+  - qa
+  - build
+  - deploy
+
+include:
+  # Stage qa
+  - component: $CI_SERVER_FQDN/dbdaap/ci-cd-components/npm/es-lint@v1.0.0-alpha.1
+  # Build for CAK08
+  #  - component: $CI_SERVER_FQDN/dbdaap/ci-cd-components/kaniko-build/kaniko-build@v1.0.0-alpha.9
+  #    inputs:
+  #      stage: build
+  #      image_name: harbor-c6.bcp.mindef.nl/gcrio/kaniko-project/executor:debug
+  #      rules:
+  #        - if: $CI_COMMIT_BRANCH != "main"
+  #      registry_path: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  #      kaniko_build_args:
+  #      - "NPM_TOKEN=$CI_JOB_TOKEN"
+  #      - "STRAPI_API_URL=$STRAPI_URL"
+  #      - "STRAPI_API_TOKEN=$_STRAPI_API_KEY"
+  #      script:
+  #        - echo "NEXT_PUBLIC_MATOMO_URL=$_WEBSTATS_URL" >> .env
+  #        - echo "NEXT_PUBLIC_MATOMO_SITE_ID=$_WEBSTATS_ID" >> .env
+  #        - cat "$REGISTRY_CERT" >> /kaniko/ssl/certs/ca-certificates.crt
+  # Deploy CAK08
+  - component: $CI_SERVER_FQDN/dbdaap/ci-cd-components/helm/helm@v1.0.0-alpha.3
+    inputs:
+      job-name-prefix: 'frontend'
+      image: registry.mindef.nl/dbdaap/pipeline/images/pipeline-tools:latest
+      environment: 'ontwikkel'
+      rules:
+        - if: '$CI_COMMIT_BRANCH != "main"'
+      kubernetes-cluster: 'CAK08'
+      kubernetes-namespace: 'dtl-dbd-ssp-web'
+      helm-chart: 'dbdaapcharts/dbdaap-selfservice-frontend'
+      helm-name: 'frontend'
+      helm-values-location: 'helm/values.yaml'
+      helm-set-values:
+        - 'git.commitHash=$CI_COMMIT_SHA'
+        - 'image.registry=$CI_REGISTRY'
+        - 'image.repository=$CI_PROJECT_PATH'
+        - 'image.tag=latest'
+        - 'ingress.url=web.dev.dbdaap.mindef.nl'
+        - 'api.cadokUrl=https://cadok.ontwikkel.dbdaap.mindef.nl/api'
+        - 'api.helmRepo=ssp'
+        - 'nextauth.secret=$_NEXTAUTH_SECRET'
+        - 'keycloak.clientSecret=$_KEYCLOAK_CLIENT_SECRET'
+        - 'strapi.url=https://strapi.ontwikkel.dbdaap.mindef.nl'
+        - 'strapi.apiToken=$_STRAPI_API_KEY'
+
+#  # Stage: Release CAK07
+#  - component: $CI_SERVER_FQDN/dbdaap/ci-cd-components/helm/helm@v1.0.0-alpha.2
+#    inputs:
+#      job-name-prefix: 'frontend'
+#      image: registry.mindef.nl/dbdaap/pipeline/images/pipeline-tools:latest
+#      environment: 'productie'
+#      rules:
+#        - if: '$CI_COMMIT_BRANCH == "main"'
+#      kubernetes-cluster: 'CAK07'
+#      kubernetes-namespace: 'dtl-dbd-ssp-web'
+#      helm-chart: 'dbdaap-selfservice-frontend'
+#      helm-name: 'frontend'
+#      helm-values-location: 'helm/values.yaml'
+#      helm-set-values:
+#        - "ingress.url=selfservice.prod.dbdaap.mindef.nl"
+#       #- "api.cadokUrl=" TODO: checken welke link voor 'productie'
+#        - "api.helmRepo=ssp"
+#        - "nextauth.secret=$_NEXTAUTH_SECRET"
+#        - "keycloak.issuer=https://auth.dbdaap.mindef.nl/realms/DBDAAP"
+#        - "keycloak.clientSecret=$_KEYCLOAK_CLIENT_SECRET"
+#        - "strapi.url=https://strapi.dbdaap.mindef.nl"
+#        - "strapi.apiToken=$_STRAPI_API_KEY"
+#        - "git.commitHash=$CI_COMMIT_SHA"
+
+## Build for Cak07
+#  - component: $CI_SERVER_FQDN/dbdaap/ci-cd-components/kaniko-build/kaniko-build@v1.0.0-alpha.5
+#    inputs:
+#      stage: release
+#      rules:
+#        - if: $CI_COMMIT_TAG
+#      image_name: harbor-c6.bcp.mindef.nl/gcrio/kaniko-project/executor:debug
+#      registry_path: $CI_REGISTRY_IMAGE:latest
+#      script:
+#        - echo "NEXT_PUBLIC_MATOMO_URL=$_WEBSTATS_URL_PRODUCTION" >> .env
+#        - echo "NEXT_PUBLIC_MATOMO_SITE_ID=$_WEBSTATS_ID_PRODUCTION" >> .env
+#        - cat "$REGISTRY_CERT" >> /kaniko/ssl/certs/ca-certificates.crt
+
+.image-build: &image-build
+  - cat "$REGISTRY_CERT" >> /kaniko/ssl/certs/ca-certificates.crt
+  - /kaniko/executor
+    --context "${CI_PROJECT_DIR}/"
+    --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+    --build-arg NPM_TOKEN=$CI_JOB_TOKEN
+    --build-arg STRAPI_API_URL=$STRAPI_URL
+    --build-arg STRAPI_API_TOKEN=$_STRAPI_API_KEY
+    --destination "$CI_REGISTRY_IMAGE:latest"
+
+build_image:
+  stage: build
+  image:
+    name: harbor-c6.bcp.mindef.nl/gcrio/kaniko-project/executor:v1.9.2-debug
+    entrypoint: ['']
+  rules:
+    - if: $CI_COMMIT_BRANCH != 'main'
+  script:
+    - echo "NEXT_PUBLIC_MATOMO_URL=$_WEBSTATS_URL" >> .env
+    - echo "NEXT_PUBLIC_MATOMO_SITE_ID=$_WEBSTATS_ID" >> .env
+
+    - *image-build
