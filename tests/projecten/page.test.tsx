@@ -1,17 +1,17 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import ProjectenPage from '../../app/projecten/page';
-import '@testing-library/jest-dom';
 import { SessionProvider } from 'next-auth/react';
+
+import '@testing-library/jest-dom';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { toast } from 'sonner';
+
+import ProjectenPage from '../../app/projecten/page';
 import { SidebarProvider } from '../../components/organisms/sidebar';
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn() }),
   usePathname: () => '/projecten',
 }));
-
-jest.mock('sonner', () => ({
-  toast: { success: jest.fn(), error: jest.fn() }
-}));
+jest.mock('sonner');
 
 describe('ProjectenPage', () => {
   const mockSession = {
@@ -37,7 +37,6 @@ describe('ProjectenPage', () => {
   });
 
   it('shows error toast if project name is empty', async () => {
-    const { toast } = require('sonner');
     renderWithProviders(<ProjectenPage />);
     fireEvent.click(screen.getByText('Nieuwe Aanvraag'));
     fireEvent.click(screen.getByText('Aanmaken'));
@@ -47,10 +46,11 @@ describe('ProjectenPage', () => {
   });
 
   it('shows success toast and resets input after creating project', async () => {
-    const { toast } = require('sonner');
     renderWithProviders(<ProjectenPage />);
     fireEvent.click(screen.getByText('Nieuwe Aanvraag'));
-    fireEvent.change(screen.getByPlaceholderText('Voer een projectnaam in'), { target: { value: 'Test Project' } });
+    fireEvent.change(screen.getByPlaceholderText('Voer een projectnaam in'), {
+      target: { value: 'Test Project' },
+    });
     fireEvent.click(screen.getByText('Aanmaken'));
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith('Project aangemaakt');

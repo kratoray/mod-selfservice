@@ -87,8 +87,6 @@ export const authOptions: AuthOptions = {
   ],
   callbacks: {
     async session({ session, token }) {
-      console.log(session);
-      console.log(token);
       const projects: { [projectId: string]: string } = {};
       (token.groups ?? [])
         .filter(group => group.startsWith('/CADOK/'))

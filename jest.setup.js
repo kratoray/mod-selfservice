@@ -1,6 +1,9 @@
 // Learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 
+// Polyfill fetch for Jest (jsdom does not provide fetch by default)
+import 'whatwg-fetch';
+
 // Mock next/router
 jest.mock('next/router', () => ({
   useRouter() {

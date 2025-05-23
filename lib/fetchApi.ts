@@ -1,5 +1,6 @@
 import { getToken } from 'next-auth/jwt';
 import { type NextRequest, NextResponse } from 'next/server';
+
 // import { H } from 'highlight.run';
 // Highlight.io integratie (voor monitoring en error logging):
 // Uncomment de import en de H.captureMessage/H.captureException regels zodra highlight.io is geconfigureerd in het project.

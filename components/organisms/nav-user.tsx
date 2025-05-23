@@ -2,9 +2,10 @@
 
 import { signOut } from 'next-auth/react';
 import { useTheme } from 'next-themes';
-import { toast } from 'sonner';
 
 import { ChevronsUpDown, LogOut, User } from 'lucide-react';
+import { toast } from 'sonner';
+
 import { Tabs, TabsList, TabsTrigger } from '@/components/atoms/tabs';
 import {
   DropdownMenu,

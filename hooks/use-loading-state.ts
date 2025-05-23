@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 
 interface UseLoadingStateOptions<T> {
   fetchFn: () => Promise<T>;
-  onError?: (error: Error) => void;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onError?: (_error: Error) => void;
 }
 
 export function useLoadingState<T>({ fetchFn, onError }: UseLoadingStateOptions<T>) {

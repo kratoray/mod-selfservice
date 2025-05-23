@@ -739,7 +739,8 @@ export default function ProjectDetailPage() {
     setProjectLoading(true);
     setProjectError(null);
     // Simuleer API call (vervang door echte fetchApi.get in productie)
-    projectApiService.getProject(projectId)
+    projectApiService
+      .getProject(projectId)
       .then(() => setProjectError(null))
       .catch(() => setProjectError('Project kon niet worden geladen.'))
       .finally(() => setProjectLoading(false));
