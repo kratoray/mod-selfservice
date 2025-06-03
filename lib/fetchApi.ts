@@ -1,23 +1,31 @@
 import { getToken } from 'next-auth/jwt';
 import { type NextRequest, NextResponse } from 'next/server';
-// import { H } from 'highlight.run';
-import { parseDocument } from 'yaml';
+
+// Helper voor error object check
+function isErrorObject(body: unknown): body is { error: string } {
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    'error' in body &&
+    typeof (body as { error: unknown }).error === 'string'
+  );
+}
 
 type Params = {
   request: NextRequest;
   path: string;
-  responseType?: 'json' | 'yaml' | 'blob' | 'none' | 'plain';
+  responseType?: 'json'; // Only json allowed
   options?: RequestInit;
 };
 
 type RawParams = Params & {
-  responseType?: 'json' | 'yaml';
+  responseType?: 'json';
 };
 
 const fetchApiRequest = async (params: Params, method: string): Promise<NextResponse> => {
   const token = await getToken({ req: params.request });
   if (!token) {
-    return NextResponse.json({}, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const url = `${process.env.CADOK_URL}/${params.path}`;
   const request = new Request(url, {
@@ -32,36 +40,43 @@ const fetchApiRequest = async (params: Params, method: string): Promise<NextResp
   try {
     response = await fetch(request);
   } catch {
-    // H.captureException?.(error, { extra: { path: params.path, method } });
     return NextResponse.json({ error: 'Network error' }, { status: 500 });
   }
 
-  if (!response.ok) {
-    let errorBody: string = '';
-    try {
-      errorBody = await response.text();
-    } catch {}
-    // H.captureMessage?.('API error', { level: 'error', extra: { path: params.path, method, status: response.status, errorBody } });
-    if (process.env.NODE_ENV === 'development') {
-      return NextResponse.json({ error: errorBody || 'API error' }, { status: response.status });
+  // Always return JSON, even for errors
+  let body: unknown = null;
+  try {
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      body = await response.json();
+    } else {
+      const text = await response.text();
+      try {
+        body = JSON.parse(text);
+      } catch {
+        body = text;
+      }
     }
-    return NextResponse.json({ error: 'API error' }, { status: response.status });
+  } catch {
+    body = null;
   }
 
-  switch (params.responseType) {
-    case 'blob':
-      return new NextResponse(await response.blob(), { status: response.status });
-    case 'plain':
-      return new NextResponse(await response.text(), { status: response.status });
-    case 'none':
-      return new NextResponse(null, { status: response.status });
-    default:
-      try {
-        return NextResponse.json(await response.json(), { status: response.status });
-      } catch {
-        return new NextResponse(null, { status: response.status });
-      }
+  if (!response.ok) {
+    // H.captureMessage?.('API error', { level: 'error', extra: { path: params.path, method, status: response.status, body } });
+    if (process.env.NODE_ENV === 'development') {
+      return NextResponse.json(
+        isErrorObject(body) ? body : { error: String(body) || 'API error' },
+        { status: response.status }
+      );
+    }
+    // In productie: alleen error veld, geen dev details
+    return NextResponse.json(isErrorObject(body) ? { error: body.error } : { error: 'API error' }, {
+      status: response.status,
+    });
   }
+
+  // Only JSON responses allowed
+  return NextResponse.json(body, { status: response.status });
 };
 
 const fetchRawApiRequest = async <T>(params: RawParams, method: string): Promise<T> => {
@@ -79,20 +94,28 @@ const fetchRawApiRequest = async <T>(params: RawParams, method: string): Promise
   try {
     response = await fetch(request);
   } catch {
-    // H.captureException?.(error, { extra: { path: params.path, method } });
     throw new Error('Network error');
   }
+  let body: unknown = null;
+  try {
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      body = await response.json();
+    } else {
+      const text = await response.text();
+      try {
+        body = JSON.parse(text);
+      } catch {
+        body = text;
+      }
+    }
+  } catch {
+    body = null;
+  }
   if (!response.ok) {
-    const errorBody = await response.text();
-    // H.captureMessage?.('API error', { level: 'error', extra: { path: params.path, method, status: response.status, errorBody } });
-    throw new Error(errorBody || 'API error');
+    throw new Error(isErrorObject(body) ? body.error : 'API error');
   }
-  switch (params.responseType) {
-    case 'yaml':
-      return parseDocument(await response.text()) as T;
-    default:
-      return response.json() as T;
-  }
+  return body as T;
 };
 
 export const fetchApi = {
