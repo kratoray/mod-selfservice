@@ -327,9 +327,15 @@ export default function ProjectDetailPage() {
                               <div key={key}>
                                 <div className="mb-1 font-semibold">{key}</div>
                                 <div className="break-words rounded bg-muted p-2">
-                                  {typeof value === 'object' && value !== null
-                                    ? JSON.stringify(value, null, 2)
-                                    : String(value)}
+                                  {(() => {
+                                    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value === null) {
+                                      return String(value);
+                                    }
+                                    if (Array.isArray(value) || typeof value === 'object') {
+                                      return <pre className="whitespace-pre-wrap">{JSON.stringify(value, null, 2)}</pre>;
+                                    }
+                                    return '';
+                                  })()}
                                 </div>
                               </div>
                             )
