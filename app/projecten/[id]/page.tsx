@@ -98,9 +98,22 @@ export default function ProjectDetailPage() {
     setFieldErrors({});
     setIsSubmitting(true);
     try {
-      // Hier kun je een echte POST doen
-      // const res = await fetch(...)
-      // if (!res.ok && result.errors) { ... }
+      // Simuleer een echte POST-call naar de backend
+      const res = await fetch('/api/forms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: currentCategory.title,
+          data,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok && result.errors) {
+        setFieldErrors(result.errors);
+        toast.error(result.message || 'Er zijn validatiefouten.');
+        return;
+      }
+      // Geen veldfouten: ga door naar volgende stap
       if (!completedCategories.includes(currentCategory.title)) {
         setCompletedCategories(prev => [...prev, currentCategory.title]);
       }
@@ -307,9 +320,21 @@ export default function ProjectDetailPage() {
                   {categories.map((category: Tab) => (
                     <div key={category.title} className="rounded-lg border p-4">
                       <h3 className="mb-3 text-lg font-medium">{category.title}</h3>
-                      <pre className="rounded bg-muted p-2">
-                        {JSON.stringify(formData[category.title], null, 2)}
-                      </pre>
+                      <div className="space-y-4">
+                        {formData[category.title] &&
+                          Object.entries(formData[category.title] as Record<string, unknown>).map(
+                            ([key, value]) => (
+                              <div key={key}>
+                                <div className="mb-1 font-semibold">{key}</div>
+                                <div className="break-words rounded bg-muted p-2">
+                                  {typeof value === 'object' && value !== null
+                                    ? JSON.stringify(value, null, 2)
+                                    : String(value)}
+                                </div>
+                              </div>
+                            )
+                          )}
+                      </div>
                     </div>
                   ))}
                   <div className="flex justify-between pt-4">
