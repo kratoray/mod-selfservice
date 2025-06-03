@@ -22,7 +22,7 @@ interface RawParams extends Params {
 }
 
 function buildRequest(path: string, method: string, token: string, options?: RequestInit) {
-  const url = `${process.env.CADOK_URL}/${path}`;
+  const url = `${process.env.CADOK_URL}/api/${path}`;
   const headers = new Headers(options?.headers);
 
   headers.set('Authorization', `Bearer ${token}`);

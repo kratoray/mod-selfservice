@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 import { toast } from 'sonner';
 
@@ -17,6 +17,7 @@ import { AppSidebar } from '@/components/templates/app-sidebar';
 
 import { cn } from '@/lib/utils';
 
+// Types
 type Tab = {
   title: string;
   description: string;
@@ -36,48 +37,30 @@ type FormApiResponse = {
 
 export default function ProjectDetailPage() {
   const router = useRouter();
-  const params = useParams();
-  const projectId = params.id as string;
 
+  // State
   const [form, setForm] = useState<FormApiResponse | null>(null);
   const [formLoading, setFormLoading] = useState(true);
   const [formError, setFormError] = useState<string | null>(null);
-
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
   const [isReviewing, setIsReviewing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [completedCategories, setCompletedCategories] = useState<string[]>([]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const submitButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  // Icon mapping, voeg meer iconen toe indien gewenst
+  // Icon mapping
   const iconMap: Record<string, React.ReactNode> = {
     Info: <span>ℹ️</span>,
     // Voeg eventueel andere iconen toe
   };
 
-  // Ophalen van het formulier zoals jouw voorbeeld
-
-
-// -------------------------------------------
-// Verbeterde client useEffect call (in je pagina/component)
-
-// In je component:
-
-import { useEffect, useState } from 'react';
-
-function useFormLoader() {
-  const [form, setForm] = useState<any>(null);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [formLoading, setFormLoading] = useState<boolean>(false);
-
+  // Ophalen van het formulier (API call)
   useEffect(() => {
     let active = true;
     setFormLoading(true);
     setFormError(null);
-
     fetch('/api/forms')
       .then(async res => {
         let data;
@@ -87,13 +70,11 @@ function useFormLoader() {
           if (active) setFormError('Ongeldige server response.');
           return;
         }
-
         if (!res.ok) {
           const msg = data?.error || data?.devError || data?.message || 'Ophalen mislukt';
           if (active) setFormError(msg);
           return;
         }
-
         if (active) setForm(data);
       })
       .catch(() => {
@@ -102,43 +83,34 @@ function useFormLoader() {
       .finally(() => {
         if (active) setFormLoading(false);
       });
-
     return () => {
       active = false;
     };
   }, []);
 
+  // Afgeleide data
   const categories = form?.tabs ?? [];
   const currentCategory = isReviewing ? null : categories[currentCategoryIndex];
 
+  // Handlers
   const handleFormSubmit = async (data: Record<string, unknown>) => {
     if (!currentCategory) return;
-    setFieldErrors({}); // reset veldfouten
+    setFieldErrors({});
     setIsSubmitting(true);
     try {
-      // Hier kun je een echte POST doen, voorbeeld:
-      // const res = await fetch('/api/forms', { method: 'POST', body: JSON.stringify(data) });
-      // const result = await res.json();
-      // if (!res.ok && result.errors) {
-      //   setFieldErrors(result.errors);
-      //   toast.error(result.message || 'Er zijn validatiefouten.');
-      //   return;
-      // }
-
-      // Simuleer geen errors: gewoon door naar volgende stap
+      // Hier kun je een echte POST doen
+      // const res = await fetch(...)
+      // if (!res.ok && result.errors) { ... }
       if (!completedCategories.includes(currentCategory.title)) {
         setCompletedCategories(prev => [...prev, currentCategory.title]);
       }
-      setFormData(prev => ({
-        ...prev,
-        [currentCategory.title]: data,
-      }));
+      setFormData(prev => ({ ...prev, [currentCategory.title]: data }));
       if (currentCategoryIndex === categories.length - 1) {
         setIsReviewing(true);
       } else {
         setCurrentCategoryIndex(currentCategoryIndex + 1);
       }
-    } catch (e: any) {
+    } catch {
       toast.error('Er is een fout opgetreden bij het opslaan.');
     } finally {
       setIsSubmitting(false);
@@ -197,7 +169,7 @@ function useFormLoader() {
     }
   };
 
-  // Skeleton loading
+  // Loading state
   if (formLoading) {
     return (
       <>
@@ -232,7 +204,7 @@ function useFormLoader() {
     );
   }
 
-  // Error-state
+  // Error state
   if (formError) {
     return (
       <>
@@ -269,6 +241,7 @@ function useFormLoader() {
     );
   }
 
+  // Main render
   return (
     <>
       <AppSidebar />
@@ -371,7 +344,7 @@ function useFormLoader() {
                         onSubmit={handleFormSubmit}
                         onError={handleFormError}
                         showErrorList={false}
-                        serverErrors={fieldErrors} // <-- veldfouten doorgeven
+                        serverErrors={fieldErrors}
                       />
                     </div>
                     <div className="mt-8 flex justify-between">
