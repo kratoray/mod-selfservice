@@ -20,12 +20,38 @@ type RawParams = Params & {
 };
 
 // Utility voor error handling
-function handleApiError(response: Response, path: string, method: string): never {
+async function handleApiError(response: Response, path: string, method: string): Promise<never> {
+  let errorMessage = `API error: ${response.status} for ${method} ${path}`;
+  let errorBody: unknown = null;
+  try {
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      errorBody = await response.json();
+    } else {
+      errorBody = await response.text();
+    }
+    if (
+      errorBody &&
+      typeof errorBody === 'object' &&
+      errorBody !== null &&
+      'message' in errorBody &&
+      typeof (errorBody as { message: unknown }).message === 'string'
+    ) {
+      errorMessage += `: ${(errorBody as { message: string }).message}`;
+    } else if (typeof errorBody === 'string' && errorBody.length > 0) {
+      errorMessage += `: ${errorBody}`;
+    }
+  } catch {
+    // ignore parse errors
+  }
   // H.captureMessage('API error', {
   //   level: 'error',
-  //   extra: { path, method, status: response.status },
+  //   extra: { path, method, status: response.status, errorBody },
   // });
-  throw new Error(`API error: ${response.status} for ${method} ${path}`);
+  const error = new Error(errorMessage);
+  (error as unknown as { response?: Response }).response = response;
+  (error as unknown as { body?: unknown }).body = errorBody;
+  throw error;
 }
 
 function buildApiRequest(
@@ -80,7 +106,34 @@ const fetchApiRequest = async (params: Params, method: string): Promise<NextResp
   }
 
   if (!response.ok) {
-    handleApiError(response, params.path, method);
+    // Haal de backend error message op
+    let devError: string | undefined = undefined;
+    let errorBody: unknown = null;
+    try {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        errorBody = await response.json();
+      } else {
+        errorBody = await response.text();
+      }
+      if (
+        errorBody &&
+        typeof errorBody === 'object' &&
+        errorBody !== null &&
+        'message' in errorBody &&
+        typeof (errorBody as { message: unknown }).message === 'string'
+      ) {
+        devError = (errorBody as { message: string }).message;
+      } else if (typeof errorBody === 'string' && errorBody.length > 0) {
+        devError = errorBody;
+      }
+    } catch {}
+    // In development: geef backend error message terug
+    if (process.env.NODE_ENV === 'development') {
+      return NextResponse.json({ error: 'API error', devError }, { status: response.status });
+    }
+    // In productie: alleen generieke error
+    return NextResponse.json({ error: 'API error' }, { status: response.status });
   }
 
   switch (params.responseType) {
