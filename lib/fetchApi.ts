@@ -1,206 +1,160 @@
+// lib/fetchApi.ts
+import { NextResponse, type NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { type NextRequest, NextResponse } from 'next/server';
-
-// import { H } from 'highlight.run';
-// Highlight.io integratie (voor monitoring en error logging):
-// Uncomment de import en de H.captureMessage/H.captureException regels zodra highlight.io is geconfigureerd in het project.
-// Zie https://www.highlight.io/docs/getting-started/integrate/nodejs voor setup.
-
 import { parseDocument } from 'yaml';
 
-type Params = {
+// import { H } from 'highlight.run';
+// Highlight.io logging staat klaar, uncomment bij implementatie
+
+export type ResponseType = 'json' | 'yaml' | 'blob' | 'none' | 'plain';
+
+interface Params {
   request: NextRequest;
   path: string;
-  responseType?: 'json' | 'yaml' | 'blob' | 'none' | 'plain';
+  responseType?: ResponseType;
   options?: RequestInit;
-};
-
-type RawParams = Params & {
-  responseType?: 'json' | 'yaml';
-};
-
-// Utility voor error handling
-function handleApiError(response: Response, path: string, method: string): never {
-  // H.captureMessage('API error', {
-  //   level: 'error',
-  //   extra: { path, method, status: response.status },
-  // });
-  throw new Error(`API error: ${response.status} for ${method} ${path}`);
+  retryCount?: number;
+  timeoutMs?: number;
 }
 
-function buildApiRequest(
-  path: string,
-  method: string,
-  token: { accessToken?: string },
-  options?: RequestInit
-) {
-  if (!process.env.CADOK_URL) {
-    throw new Error('CADOK_URL environment variable is not set');
-  }
+interface RawParams extends Params {
+  responseType?: 'json' | 'yaml';
+}
+
+function buildRequest(path: string, method: string, token: string, options?: RequestInit) {
   const url = `${process.env.CADOK_URL}/${path}`;
-  // Headers correct opbouwen
-  const headers = new Headers(options?.headers || {});
-  if (token.accessToken) {
-    headers.set('Authorization', `Bearer ${token.accessToken}`);
-  }
+  const headers = new Headers(options?.headers);
+
+  headers.set('Authorization', `Bearer ${token}`);
   headers.set('Accept-Language', 'nl');
-  const request = new Request(url, {
+
+  return new Request(url, {
     cache: 'no-store',
     ...options,
     method,
     headers,
   });
-  return request;
 }
 
-const fetchApiRequest = async (params: Params, method: string): Promise<NextResponse> => {
-  const token = await getToken({ req: params.request });
-
-  if (!token) {
-    // H.captureMessage('Unauthorized: No token found', {
-    //   level: 'warn',
-    //   extra: { path: params.path, method },
-    // });
-    return NextResponse.json(
-      {},
-      {
-        status: 401,
-      }
-    );
-  }
-
-  const request = buildApiRequest(params.path, method, token, params.options);
-
-  let response: Response;
+async function parseErrorResponse(response: Response) {
+  const contentType = response.headers.get('content-type') || '';
+  let body: any = null;
   try {
-    response = await fetch(request);
-  } catch {
-    // H.captureException(error, { extra: { path: params.path, method } });
-    return NextResponse.json({ error: 'Network error' }, { status: 500 });
+    if (contentType.includes('application/json')) {
+      body = await response.json();
+    } else {
+      body = await response.text();
+    }
+  } catch {}
+
+  const message =
+    typeof body === 'object' && body?.message ? body.message : typeof body === 'string' ? body : null;
+
+  return { error: 'API error', devError: message };
+}
+
+async function tryFetchWithRetry(
+  request: Request,
+  retries = 1,
+  timeoutMs = 5000
+): Promise<Response> {
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      const res = await fetch(request, { signal: controller.signal });
+      clearTimeout(timeout);
+      return res;
+    } catch (err) {
+      lastError = err;
+      if (attempt === retries) throw err;
+      await new Promise(r => setTimeout(r, 250)); // kleine delay tussen retries
+    }
+  }
+  throw lastError;
+}
+
+async function fetchApiRequest(params: Params, method: string): Promise<NextResponse> {
+  const token = await getToken({ req: params.request });
+  if (!token?.accessToken) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!response.ok) {
-    handleApiError(response, params.path, method);
+  const req = buildRequest(params.path, method, token.accessToken, params.options);
+  let res: Response;
+  try {
+    res = await tryFetchWithRetry(req, params.retryCount ?? 0, params.timeoutMs ?? 5000);
+  } catch (err) {
+    // H.captureException?.(err, { extra: { path: params.path, method } });
+    return NextResponse.json({ error: 'Netwerkfout' }, { status: 500 });
+  }
+
+  if (!res.ok) {
+    if (res.status === 401) return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 });
+    if (res.status === 403) return NextResponse.json({ error: 'Geen toegang' }, { status: 403 });
+    if (res.status === 404) return NextResponse.json({ error: 'Niet gevonden' }, { status: 404 });
+
+    const errBody = await parseErrorResponse(res);
+    // H.captureMessage?.('API error', { level: 'error', extra: { path: params.path, method, status: res.status, body: errBody } });
+    return process.env.NODE_ENV === 'development'
+      ? NextResponse.json(errBody, { status: res.status })
+      : NextResponse.json({ error: errBody.error }, { status: res.status });
   }
 
   switch (params.responseType) {
-    case 'blob': {
-      const blob = await response.blob();
-      return new NextResponse(blob, { status: response.status });
-    }
-    case 'plain': {
-      const text = await response.text();
-      return new NextResponse(text, { status: response.status });
-    }
-    case 'none':
-      return new NextResponse(null, { status: response.status });
-    default: {
-      const contentLength = response.headers.get('content-length');
-      if (response.status === 204 || contentLength === '0' || response.body === null) {
-        return new NextResponse(null, { status: response.status });
-      }
+    case 'blob': return new NextResponse(await res.blob(), { status: res.status });
+    case 'plain': return new NextResponse(await res.text(), { status: res.status });
+    case 'none': return new NextResponse(null, { status: res.status });
+    default:
       try {
-        const json = await response.json();
-        return NextResponse.json(json, { status: response.status });
+        const json = await res.json();
+        return NextResponse.json(json, { status: res.status });
       } catch {
-        return new NextResponse(null, { status: response.status });
+        return new NextResponse(null, { status: res.status });
       }
-    }
   }
-};
+}
 
-const fetchRawApiRequest = async <T>(params: RawParams, method: string): Promise<T> => {
+async function fetchRawApiRequest<T>(params: RawParams, method: string): Promise<T> {
   const token = await getToken({ req: params.request });
+  if (!token?.accessToken) throw new Error('Unauthorized');
 
-  if (!token) {
-    // H.captureMessage('Unauthorized: No token found', {
-    //   level: 'warn',
-    //   extra: { path: params.path, method },
-    // });
-    throw new Error('Unauthorized');
-  }
-
-  const request = buildApiRequest(params.path, method, token, params.options);
-
-  let response: Response;
+  const req = buildRequest(params.path, method, token.accessToken, params.options);
+  let res: Response;
   try {
-    response = await fetch(request);
-  } catch (error) {
-    // H.captureException(error, { extra: { path: params.path, method } });
-    throw error;
+    res = await tryFetchWithRetry(req, params.retryCount ?? 0, params.timeoutMs ?? 5000);
+  } catch (err) {
+    // H.captureException?.(err, { extra: { path: params.path, method } });
+    throw new Error('Netwerkfout');
   }
 
-  if (!response.ok) {
-    handleApiError(response, params.path, method);
+  if (!res.ok) {
+    if (res.status === 401) throw new Error('Niet ingelogd');
+    if (res.status === 403) throw new Error('Geen toegang');
+    if (res.status === 404) throw new Error('Niet gevonden');
+
+    const errBody = await parseErrorResponse(res);
+    // H.captureMessage?.('API error', { level: 'error', extra: { path: params.path, method, status: res.status, body: errBody } });
+    throw new Error(errBody.devError || errBody.error);
   }
 
   switch (params.responseType) {
-    case 'yaml': {
-      const text = await response.text();
-      return parseDocument(text) as T;
-    }
-    default: {
-      const contentLength = response.headers.get('content-length');
-      if (response.status === 204 || contentLength === '0' || response.body === null) {
-        return null as T;
-      }
+    case 'yaml': return parseDocument(await res.text()) as T;
+    default:
       try {
-        const json = await response.json();
-        return json as T;
+        return (await res.json()) as T;
       } catch {
         return null as T;
       }
-    }
   }
-};
+}
 
 export const fetchApi = {
-  get: async <T = unknown>(params: Params): Promise<T> => {
-    const response = await fetchApiRequest(params, 'GET');
-    try {
-      return (await response.json()) as T;
-    } catch {
-      return null as T;
-    }
-  },
-
-  getRaw: async <T>(params: RawParams): Promise<T> => {
-    return fetchRawApiRequest<T>(params, 'GET');
-  },
-
-  post: async <T = unknown>(params: Params): Promise<T> => {
-    const response = await fetchApiRequest(params, 'POST');
-    try {
-      return (await response.json()) as T;
-    } catch {
-      return null as T;
-    }
-  },
-
-  put: async <T = unknown>(params: Params): Promise<T> => {
-    const response = await fetchApiRequest(params, 'PUT');
-    try {
-      return (await response.json()) as T;
-    } catch {
-      return null as T;
-    }
-  },
-
-  patch: async <T = unknown>(params: Params): Promise<T> => {
-    const response = await fetchApiRequest(params, 'PATCH');
-    try {
-      return (await response.json()) as T;
-    } catch {
-      return null as T;
-    }
-  },
-
-  delete: async <T = unknown>(params: Params): Promise<T> => {
-    const response = await fetchApiRequest(params, 'DELETE');
-    try {
-      return (await response.json()) as T;
-    } catch {
-      return null as T;
-    }
-  },
+  get: (params: Params) => fetchApiRequest(params, 'GET'),
+  getRaw: <T>(params: RawParams) => fetchRawApiRequest<T>(params, 'GET'),
+  post: (params: Params) => fetchApiRequest(params, 'POST'),
+  put: (params: Params) => fetchApiRequest(params, 'PUT'),
+  patch: (params: Params) => fetchApiRequest(params, 'PATCH'),
+  delete: (params: Params) => fetchApiRequest(params, 'DELETE'),
 };
