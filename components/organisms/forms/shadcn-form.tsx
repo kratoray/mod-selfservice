@@ -30,6 +30,7 @@ interface ShadcnFormProps {
   widgets?: Record<string, React.ComponentType<WidgetProps>>;
   transformErrors?: (errors: RJSFValidationError[]) => RJSFValidationError[];
   showErrorList?: false | 'top' | 'bottom';
+  serverErrors?: Record<string, string[]>; // <-- veldfouten van backend
 }
 
 const ArrayFieldTemplate = (props: ArrayFieldTemplateProps) => {
@@ -163,6 +164,7 @@ export function ShadcnForm({
   widgets,
   transformErrors: customTransformErrors,
   showErrorList = false,
+  serverErrors = {}, // <-- veldfouten van backend
 }: ShadcnFormProps) {
   const handleSubmit = (/* eslint-disable-next-line no-unused-vars */ data: FormContextType) => {
     onSubmit?.(data.formData);
@@ -190,6 +192,24 @@ export function ShadcnForm({
     },
   };
 
+  // Custom error merging: combine RJSF errors met serverErrors
+  const mergedTransformErrors = (errors: RJSFValidationError[]) => {
+    const newErrors = (customTransformErrors || transformErrors)(errors);
+    Object.entries(serverErrors).forEach(([field, messages]) => {
+      messages.forEach(msg => {
+        newErrors.push({
+          name: 'server',
+          property: `.${field}`,
+          message: msg,
+          stack: msg,
+          params: {},
+          schemaPath: '',
+        } as RJSFValidationError);
+      });
+    });
+    return newErrors;
+  };
+
   return (
     <div className="space-y-6">
       <ThemelessForm
@@ -197,7 +217,7 @@ export function ShadcnForm({
         {...config}
         onSubmit={handleSubmit}
         onError={handleError}
-        transformErrors={customTransformErrors || transformErrors}
+        transformErrors={mergedTransformErrors}
         showErrorList={showErrorList}
       />
     </div>

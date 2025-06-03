@@ -2,9 +2,10 @@ import { ReactNode } from 'react';
 
 export interface FormFieldProps {
   id?: string;
+  name?: string; // veldnaam voor error mapping
   label?: string;
   description?: string;
-  error?: string;
+  error?: string | string[]; // accepteer array of string
   children: ReactNode;
   className?: string;
   required?: boolean;
@@ -15,6 +16,7 @@ export interface FormProps {
   onSubmit: (data: Record<string, unknown>) => void;
   children: ReactNode;
   className?: string;
+  errors?: Record<string, string[]>; // veldfouten per veld
 }
 
 export interface FormNavigationProps {

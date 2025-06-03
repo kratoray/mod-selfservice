@@ -31,8 +31,24 @@ import { AppSidebar } from '@/components/templates/app-sidebar';
 export default function FormExamplesPage() {
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [date, setDate] = useState<Date>();
+  const [formErrors, setFormErrors] = useState<Record<string, string[]>>({});
 
+  // Simuleer backend validatie
   const handleSubmit = (data: Record<string, unknown>) => {
+    // Reset errors
+    setFormErrors({});
+    // Simuleer een backend response met veldfouten
+    const errors: Record<string, string[]> = {};
+    if (!data.name || typeof data.name !== 'string' || data.name.length < 2) {
+      errors.name = ['Naam is verplicht', 'Naam moet minimaal 2 tekens zijn'];
+    }
+    if (!data.email || typeof data.email !== 'string' || !data.email.includes('@')) {
+      errors.email = ['E-mailadres is verplicht', 'E-mailadres is ongeldig'];
+    }
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
     setFormData(data);
   };
 
@@ -170,17 +186,17 @@ export default function FormExamplesPage() {
                 <section className="mb-12">
                   <h2 className="mb-6 text-xl font-semibold">Volledig Formuliervoorbeeld</h2>
                   <div className="rounded-lg border p-6">
-                    <Form onSubmit={handleSubmit} className="space-y-8">
-                      <FormField label="Volledige naam" required>
+                    <Form onSubmit={handleSubmit} errors={formErrors} className="space-y-8">
+                      <FormField label="Volledige naam" name="name" required>
                         <Input placeholder="Jan Jansen" name="name" />
                       </FormField>
 
-                      <FormField label="E-mailadres" required>
+                      <FormField label="E-mailadres" name="email" required>
                         <Input type="email" placeholder="jan@voorbeeld.nl" name="email" />
                       </FormField>
 
                       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        <FormField label="Geboortedatum">
+                        <FormField label="Geboortedatum" name="date_of_birth">
                           <DatePicker
                             date={date}
                             onSelect={setDate}
@@ -188,7 +204,7 @@ export default function FormExamplesPage() {
                           />
                         </FormField>
 
-                        <FormField label="Land">
+                        <FormField label="Land" name="country">
                           <Select name="country">
                             <SelectTrigger>
                               <SelectValue placeholder="Selecteer een land" />
@@ -203,11 +219,11 @@ export default function FormExamplesPage() {
                         </FormField>
                       </div>
 
-                      <FormField label="Biografie">
+                      <FormField label="Biografie" name="bio">
                         <Textarea placeholder="Vertel ons over jezelf..." name="bio" />
                       </FormField>
 
-                      <FormField label="Voorkeuren">
+                      <FormField label="Voorkeuren" name="newsletter">
                         <div className="space-y-4">
                           <div className="flex items-center space-x-2">
                             <Checkbox id="newsletter" name="newsletter" />

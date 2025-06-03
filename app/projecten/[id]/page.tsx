@@ -49,6 +49,7 @@ export default function ProjectDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [completedCategories, setCompletedCategories] = useState<string[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const submitButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Icon mapping, voeg meer iconen toe indien gewenst
@@ -110,20 +111,37 @@ function useFormLoader() {
   const categories = form?.tabs ?? [];
   const currentCategory = isReviewing ? null : categories[currentCategoryIndex];
 
-  const handleFormSubmit = (data: Record<string, unknown>) => {
+  const handleFormSubmit = async (data: Record<string, unknown>) => {
     if (!currentCategory) return;
+    setFieldErrors({}); // reset veldfouten
+    setIsSubmitting(true);
+    try {
+      // Hier kun je een echte POST doen, voorbeeld:
+      // const res = await fetch('/api/forms', { method: 'POST', body: JSON.stringify(data) });
+      // const result = await res.json();
+      // if (!res.ok && result.errors) {
+      //   setFieldErrors(result.errors);
+      //   toast.error(result.message || 'Er zijn validatiefouten.');
+      //   return;
+      // }
 
-    if (!completedCategories.includes(currentCategory.title)) {
-      setCompletedCategories(prev => [...prev, currentCategory.title]);
-    }
-    setFormData(prev => ({
-      ...prev,
-      [currentCategory.title]: data,
-    }));
-    if (currentCategoryIndex === categories.length - 1) {
-      setIsReviewing(true);
-    } else {
-      setCurrentCategoryIndex(currentCategoryIndex + 1);
+      // Simuleer geen errors: gewoon door naar volgende stap
+      if (!completedCategories.includes(currentCategory.title)) {
+        setCompletedCategories(prev => [...prev, currentCategory.title]);
+      }
+      setFormData(prev => ({
+        ...prev,
+        [currentCategory.title]: data,
+      }));
+      if (currentCategoryIndex === categories.length - 1) {
+        setIsReviewing(true);
+      } else {
+        setCurrentCategoryIndex(currentCategoryIndex + 1);
+      }
+    } catch (e: any) {
+      toast.error('Er is een fout opgetreden bij het opslaan.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -270,7 +288,7 @@ function useFormLoader() {
             {/* Sidebar links */}
             <div className="mr-8 w-72 flex-shrink-0">
               <div className="flex h-full flex-col space-y-4">
-                {categories.map((category, index) => {
+                {categories.map((category: Tab, index: number) => {
                   const isActive = currentCategoryIndex === index && !isReviewing;
                   const isCompleted = completedCategories.includes(category.title);
                   return (
@@ -313,7 +331,7 @@ function useFormLoader() {
                       Controleer alle ingevulde gegevens voordat je de aanvraag indient.
                     </p>
                   </div>
-                  {categories.map(category => (
+                  {categories.map((category: Tab) => (
                     <div key={category.title} className="rounded-lg border p-4">
                       <h3 className="mb-3 text-lg font-medium">{category.title}</h3>
                       <pre className="rounded bg-muted p-2">
@@ -335,6 +353,15 @@ function useFormLoader() {
                   <h2 className="mb-6 text-xl font-semibold">{currentCategory.title}</h2>
                   <div className="space-y-6">
                     <div className="form-container">
+                      {/* Algemene foutmelding */}
+                      {Object.keys(fieldErrors).length > 0 && (
+                        <Alert variant="destructive" className="mb-4">
+                          <AlertTitle>Fout</AlertTitle>
+                          <AlertDescription>
+                            Er zijn validatiefouten. Controleer de velden hieronder.
+                          </AlertDescription>
+                        </Alert>
+                      )}
                       <ShadcnForm
                         schema={currentCategory.schema}
                         uiSchema={{
@@ -344,6 +371,7 @@ function useFormLoader() {
                         onSubmit={handleFormSubmit}
                         onError={handleFormError}
                         showErrorList={false}
+                        serverErrors={fieldErrors} // <-- veldfouten doorgeven
                       />
                     </div>
                     <div className="mt-8 flex justify-between">
