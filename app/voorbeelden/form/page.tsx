@@ -281,12 +281,12 @@ export default function FormExamplesPage() {
                     <div>
                       <h3 className="mb-2 text-lg font-medium">Select Component</h3>
                       <pre className="overflow-x-auto rounded-md bg-slate-950 p-4 text-slate-50">
-                        <code>{`import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+                        <code>{`import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/atoms/select';
 
 <Select>
@@ -336,22 +336,22 @@ import { Input } from '@/components/atoms/input';
 import { Form, FormField } from '@/components/molecules/forms';
 
 <Form onSubmit={handleSubmit} className="space-y-4">
-  <FormField 
-    label="Naam" 
+  <FormField
+    label="Naam"
     required
     description="Voer uw volledige naam in"
   >
     <Input placeholder="John Doe" name="name" />
   </FormField>
-  
-  <FormField 
-    label="Email" 
+
+  <FormField
+    label="Email"
     required
     description="Uw email adres"
   >
     <Input type="email" placeholder="john@example.com" name="email" />
   </FormField>
-  
+
   <Button type="submit">Verzenden</Button>
 </Form>`}</code>
                       </pre>
