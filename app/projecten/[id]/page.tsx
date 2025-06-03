@@ -317,32 +317,34 @@ export default function ProjectDetailPage() {
                       Controleer alle ingevulde gegevens voordat je de aanvraag indient.
                     </p>
                   </div>
-                  {categories.map((category: Tab) => (
-                    <div key={category.title} className="rounded-lg border p-4">
-                      <h3 className="mb-3 text-lg font-medium">{category.title}</h3>
-                      <div className="space-y-4">
-                        {formData[category.title] &&
-                          Object.entries(formData[category.title] as Record<string, unknown>).map(
-                            ([key, value]) => (
-                              <div key={key}>
-                                <div className="mb-1 font-semibold">{key}</div>
-                                <div className="break-words rounded bg-muted p-2">
-                                  {(() => {
-                                    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value === null) {
-                                      return String(value);
-                                    }
-                                    if (Array.isArray(value) || typeof value === 'object') {
-                                      return <pre className="whitespace-pre-wrap">{JSON.stringify(value, null, 2)}</pre>;
-                                    }
-                                    return '';
-                                  })()}
-                                </div>
+                  {categories.map((category: Tab) => {
+                    type SchemaProperty = { title?: string };
+                    const schemaProps =
+                      (category.schema as { properties?: Record<string, SchemaProperty> })
+                        .properties || {};
+                    const values = (formData[category.title] as Record<string, unknown>) || {};
+                    return (
+                      <div key={category.title} className="rounded-lg border p-4">
+                        <h3 className="mb-3 text-lg font-medium">{category.title}</h3>
+                        <div className="space-y-4">
+                          {Object.keys(schemaProps).map(key => (
+                            <div key={key}>
+                              <div className="mb-1 font-semibold">
+                                {schemaProps[key].title || key}
                               </div>
-                            )
-                          )}
+                              <div className="break-words rounded bg-muted p-2">
+                                {values[key] == null || values[key] === '' ? (
+                                  <span>-</span>
+                                ) : (
+                                  String(values[key])
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   <div className="flex justify-between pt-4">
                     <Button variant="outline" onClick={handlePrevious}>
                       Terug
