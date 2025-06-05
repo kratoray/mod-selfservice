@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
 import { AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -38,6 +38,8 @@ type FormApiResponse = {
 
 export default function ProjectDetailPage() {
   const router = useRouter();
+  const params = useParams<{ id: string }>();
+  const requestId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   // State
   const [form, setForm] = useState<FormApiResponse | null>(null);
@@ -151,7 +153,28 @@ export default function ProjectDetailPage() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // Hier kun je een echte POST doen
+      const form_content_tabs = categories.map(cat =>
+        (formData[cat.title] as Record<string, unknown>) || {}
+      );
+
+      const payload = {
+        form_content_tabs,
+        project_department: 'CLAS',
+        project_name:
+          (formData['Algemene Informatie'] as { title?: string })?.title || '',
+        project_storage: true,
+      };
+
+      const res = await fetch(`/api/projects/request/${requestId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        throw new Error('Request failed');
+      }
+
       router.push('/projecten');
       toast.success('Project aanvraag is succesvol ingediend');
     } catch {
