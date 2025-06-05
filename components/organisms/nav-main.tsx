@@ -29,7 +29,12 @@ interface NavItem {
   items?: NavItem[];
 }
 
-export function NavMain({ items }: { items: NavItem[] }) {
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+export function NavMain({ groups }: { groups: NavGroup[] }) {
   const renderNavItem = (item: NavItem, level: number = 0) => {
     const hasItems = item.items && item.items.length > 0;
     const isFirstLevel = level === 0;
@@ -77,9 +82,17 @@ export function NavMain({ items }: { items: NavItem[] }) {
   };
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel className="text-white">Boilerplate</SidebarGroupLabel>
-      <SidebarMenu>{items.map(item => renderNavItem(item))}</SidebarMenu>
-    </SidebarGroup>
+    <>
+      {groups.map(group => (
+        <SidebarGroup key={group.label}>
+          <SidebarGroupLabel className="text-white">
+            {group.label}
+          </SidebarGroupLabel>
+          <SidebarMenu>
+            {group.items.map(item => renderNavItem(item))}
+          </SidebarMenu>
+        </SidebarGroup>
+      ))}
+    </>
   );
 }
