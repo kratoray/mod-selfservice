@@ -7,12 +7,10 @@ import { useRouter } from 'next/navigation';
 import { PlusCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Alert, AlertDescription, AlertTitle } from '@/components/atoms/alert';
 import { Button } from '@/components/atoms/button';
 import { Input } from '@/components/atoms/input';
 import { Label } from '@/components/atoms/label';
 import { Separator } from '@/components/atoms/separator';
-import { Skeleton } from '@/components/atoms/skeleton';
 import { BreadcrumbNav } from '@/components/molecules/breadcrumb-nav';
 import {
   Dialog,
@@ -23,18 +21,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/molecules/dialog';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/molecules/sheet';
 import { SidebarInset, SidebarTrigger } from '@/components/organisms/sidebar';
 import { AppSidebar } from '@/components/templates/app-sidebar';
 
+// Pas indien nodig aan op jouw projectmodel
 type Project = { id: string; name: string };
 
 export default function ProjectenPage() {
@@ -42,6 +32,8 @@ export default function ProjectenPage() {
   const [isOpen, setIsOpen] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Projecten ophalen
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [projectsError, setProjectsError] = useState<string | null>(null);
@@ -49,21 +41,18 @@ export default function ProjectenPage() {
   useEffect(() => {
     let mounted = true;
     setProjectsLoading(true);
+    setProjectsError(null);
+
     fetch('/api/projects')
       .then(async res => {
         if (!res.ok) throw new Error('Projecten ophalen mislukt');
         return res.json();
       })
       .then((data: Project[]) => {
-        if (mounted) {
-          setProjects(data || []);
-          setProjectsError(null);
-        }
+        if (mounted) setProjects(data || []);
       })
       .catch(() => {
-        if (mounted) {
-          setProjectsError('Projecten konden niet worden geladen.');
-        }
+        if (mounted) setProjectsError('Projecten konden niet worden geladen.');
       })
       .finally(() => {
         if (mounted) setProjectsLoading(false);
@@ -73,25 +62,35 @@ export default function ProjectenPage() {
     };
   }, []);
 
+  // Je bestaande functie behouden
   const handleCreateProject = async () => {
-    if (!projectName.trim()) {
-      toast.error('Geef een naam op voor het project');
-      return;
-    }
+    // if (!projectName.trim()) {
+    //   toast.error('Geef een naam op voor het project');
+    //   return;
+    // }
 
     setIsLoading(true);
 
     try {
-      // In a real application, make an API call to create the project
-      // For now, we'll simulate the API call with a timeout
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const res = await fetch('/api/projects/request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: projectName }),
+      });
 
-      // Mock project ID
-      const projectId = Date.now().toString();
+      if (!res.ok) {
+        throw new Error('Project aanmaken mislukt');
+      }
+
+      // Stel dat je backend het nieuwe project teruggeeft:
+      const project = await res.json();
 
       setIsOpen(false);
       toast.success('Project aangemaakt');
-      router.push(`/projecten/${projectId}`);
+      // Navigeer naar het nieuwe project. Gebruik het id uit de response!
+      router.push(`/projecten/${project.id}`);
     } catch {
       toast.error('Er is een fout opgetreden bij het aanmaken van het project');
     } finally {
@@ -112,9 +111,8 @@ export default function ProjectenPage() {
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-6 p-6">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">Projecten Overzicht</h1>
-            {/* Dialog variant */}
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
               <DialogTrigger asChild>
                 <Button className="ml-auto">
@@ -151,58 +149,14 @@ export default function ProjectenPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-            {/* Sheet variant */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" className="ml-2">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Nieuwe Aanvraag (Sheet)
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right">
-                <SheetHeader>
-                  <SheetTitle>Nieuwe Project Aanvraag</SheetTitle>
-                  <SheetDescription>
-                    Vul de naam in voor de nieuwe project aanvraag. Na het aanmaken kun je verdere
-                    details invullen.
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="projectNameSheet" className="text-right">
-                      Project Naam
-                    </Label>
-                    <Input
-                      id="projectNameSheet"
-                      value={projectName}
-                      onChange={e => setProjectName(e.target.value)}
-                      className="col-span-3"
-                      placeholder="Voer een projectnaam in"
-                    />
-                  </div>
-                </div>
-                <SheetFooter>
-                  <Button type="submit" onClick={handleCreateProject} disabled={isLoading}>
-                    {isLoading ? 'Aanmaken...' : 'Aanmaken'}
-                  </Button>
-                </SheetFooter>
-              </SheetContent>
-            </Sheet>
           </div>
 
           <div className="rounded-lg border">
             <div className="p-4">
               {projectsLoading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-6 w-1/2" />
-                  <Skeleton className="h-4 w-1/3" />
-                  <Skeleton className="h-4 w-1/4" />
-                </div>
+                <p>Projecten laden...</p>
               ) : projectsError ? (
-                <Alert variant="destructive">
-                  <AlertTitle>Fout</AlertTitle>
-                  <AlertDescription>{projectsError}</AlertDescription>
-                </Alert>
+                <p style={{ color: 'red' }}>{projectsError}</p>
               ) : !projects || projects.length === 0 ? (
                 <p className="text-muted-foreground">Er zijn nog geen projecten.</p>
               ) : (

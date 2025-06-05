@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/atoms/alert';
@@ -47,16 +48,16 @@ export default function ProjectDetailPage() {
   const [isReviewing, setIsReviewing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedCategories, setCompletedCategories] = useState<string[]>([]);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const submitButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Icon mapping
   const iconMap: Record<string, React.ReactNode> = {
     Info: <span>ℹ️</span>,
-    // Voeg eventueel andere iconen toe
+    DollarSign: <span>$</span>,
+    Users: <span>u</span>,
+    CalendarDays: <span>C</span>,
   };
 
-  // Ophalen van het formulier (API call)
   useEffect(() => {
     let active = true;
     setFormLoading(true);
@@ -88,45 +89,23 @@ export default function ProjectDetailPage() {
     };
   }, []);
 
-  // Afgeleide data
   const categories = form?.tabs ?? [];
   const currentCategory = isReviewing ? null : categories[currentCategoryIndex];
 
-  // Handlers
-  const handleFormSubmit = async (data: Record<string, unknown>) => {
+  const handleFormSubmit = (data: Record<string, unknown>) => {
     if (!currentCategory) return;
-    setFieldErrors({});
-    setIsSubmitting(true);
-    try {
-      // Simuleer een echte POST-call naar de backend
-      const res = await fetch('/api/forms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category: currentCategory.title,
-          data,
-        }),
-      });
-      const result = await res.json();
-      if (!res.ok && result.errors) {
-        setFieldErrors(result.errors);
-        toast.error(result.message || 'Er zijn validatiefouten.');
-        return;
-      }
-      // Geen veldfouten: ga door naar volgende stap
-      if (!completedCategories.includes(currentCategory.title)) {
-        setCompletedCategories(prev => [...prev, currentCategory.title]);
-      }
-      setFormData(prev => ({ ...prev, [currentCategory.title]: data }));
-      if (currentCategoryIndex === categories.length - 1) {
-        setIsReviewing(true);
-      } else {
-        setCurrentCategoryIndex(currentCategoryIndex + 1);
-      }
-    } catch {
-      toast.error('Er is een fout opgetreden bij het opslaan.');
-    } finally {
-      setIsSubmitting(false);
+
+    if (!completedCategories.includes(currentCategory.title)) {
+      setCompletedCategories(prev => [...prev, currentCategory.title]);
+    }
+    setFormData(prev => ({
+      ...prev,
+      [currentCategory.title]: data,
+    }));
+    if (currentCategoryIndex === categories.length - 1) {
+      setIsReviewing(true);
+    } else {
+      setCurrentCategoryIndex(currentCategoryIndex + 1);
     }
   };
 
@@ -182,7 +161,7 @@ export default function ProjectDetailPage() {
     }
   };
 
-  // Loading state
+  // Skeleton loading
   if (formLoading) {
     return (
       <>
@@ -217,7 +196,7 @@ export default function ProjectDetailPage() {
     );
   }
 
-  // Error state
+  // Error-state
   if (formError) {
     return (
       <>
@@ -235,14 +214,9 @@ export default function ProjectDetailPage() {
               <h1 className="text-2xl font-bold">Project Aanvraag</h1>
             </div>
             <div className="flex flex-1 p-6">
-              <div className="mr-8 w-72 flex-shrink-0">
-                <Alert variant="destructive">
-                  <AlertTitle>Fout</AlertTitle>
-                  <AlertDescription>{formError}</AlertDescription>
-                </Alert>
-              </div>
               <div className="flex-1">
                 <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Fout</AlertTitle>
                   <AlertDescription>{formError}</AlertDescription>
                 </Alert>
@@ -254,7 +228,6 @@ export default function ProjectDetailPage() {
     );
   }
 
-  // Main render
   return (
     <>
       <AppSidebar />
@@ -274,7 +247,7 @@ export default function ProjectDetailPage() {
             {/* Sidebar links */}
             <div className="mr-8 w-72 flex-shrink-0">
               <div className="flex h-full flex-col space-y-4">
-                {categories.map((category: Tab, index: number) => {
+                {categories.map((category, index) => {
                   const isActive = currentCategoryIndex === index && !isReviewing;
                   const isCompleted = completedCategories.includes(category.title);
                   return (
@@ -359,15 +332,6 @@ export default function ProjectDetailPage() {
                   <h2 className="mb-6 text-xl font-semibold">{currentCategory.title}</h2>
                   <div className="space-y-6">
                     <div className="form-container">
-                      {/* Algemene foutmelding */}
-                      {Object.keys(fieldErrors).length > 0 && (
-                        <Alert variant="destructive" className="mb-4">
-                          <AlertTitle>Fout</AlertTitle>
-                          <AlertDescription>
-                            Er zijn validatiefouten. Controleer de velden hieronder.
-                          </AlertDescription>
-                        </Alert>
-                      )}
                       <ShadcnForm
                         schema={currentCategory.schema}
                         uiSchema={{
@@ -377,7 +341,6 @@ export default function ProjectDetailPage() {
                         onSubmit={handleFormSubmit}
                         onError={handleFormError}
                         showErrorList={false}
-                        serverErrors={fieldErrors}
                       />
                     </div>
                     <div className="mt-8 flex justify-between">

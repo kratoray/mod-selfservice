@@ -8,3 +8,14 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
     path: 'v1/projects',
   });
 };
+
+export const POST = async (request: NextRequest): Promise<NextResponse> => {
+  return fetchApi.post({
+    request,
+    path: 'admin/v1/projects',
+    options: {
+      headers: { 'Content-Type': 'application/json' },
+      body: await request.text(),
+    },
+  });
+};
