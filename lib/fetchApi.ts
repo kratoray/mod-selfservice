@@ -60,14 +60,15 @@ async function tryFetchWithRetry(
 ): Promise<Response> {
   let lastError;
   for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), timeoutMs);
-      const res = await fetch(request, { signal: controller.signal });
+      const res = await fetch(request.clone(), { signal: controller.signal });
       clearTimeout(timeout);
       return res;
     } catch (err) {
       lastError = err;
+      clearTimeout(timeout);
       if (attempt === retries) throw err;
       await new Promise(r => setTimeout(r, 250)); // kleine delay tussen retries
     }
