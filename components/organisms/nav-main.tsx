@@ -29,7 +29,7 @@ interface NavItem {
   items?: NavItem[];
 }
 
-interface NavGroup {
+export interface NavGroup {
   label: string;
   items: NavItem[];
 }
