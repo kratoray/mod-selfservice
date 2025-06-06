@@ -21,7 +21,7 @@ import {
   Tag,
 } from 'lucide-react';
 
-import { NavMain } from '@/components/organisms/nav-main';
+import { NavMain, type NavGroup } from '@/components/organisms/nav-main';
 import { NavSecondary } from '@/components/organisms/nav-secondary';
 import { NavUser } from '@/components/organisms/nav-user';
 import { ProjectSwitcher } from '@/components/organisms/project-switcher';
@@ -125,7 +125,7 @@ const data = {
         },
       ],
     },
-  ],
+  ] as NavGroup[],
   navSecondary: [
     {
       title: 'Help Center',
