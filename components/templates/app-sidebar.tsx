@@ -19,9 +19,10 @@ import {
   SquarePlay,
   SquareTerminal,
   Tag,
+  type LucideIcon,
 } from 'lucide-react';
 
-import { NavMain } from '@/components/organisms/nav-main';
+import { NavMain, type NavGroup } from '@/components/organisms/nav-main';
 import { NavSecondary } from '@/components/organisms/nav-secondary';
 import { NavUser } from '@/components/organisms/nav-user';
 import { ProjectSwitcher } from '@/components/organisms/project-switcher';
@@ -32,7 +33,11 @@ import {
   SidebarHeader,
 } from '@/components/organisms/sidebar';
 
-const data = {
+const data: {
+  projects: { name: string; logo: LucideIcon; plan: string }[];
+  navMain: NavGroup[];
+  navSecondary: { title: string; url: string; icon: LucideIcon }[];
+} = {
   projects: [
     {
       name: 'SSP 2.0',

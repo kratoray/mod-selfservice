@@ -21,16 +21,16 @@ import {
   SidebarMenuSubItem,
 } from '@/components/organisms/sidebar';
 
-interface NavItem {
+export interface NavGroup {
   title: string;
   url: string;
   icon?: LucideIcon;
   isActive?: boolean;
-  items?: NavItem[];
+  items?: NavGroup[];
 }
 
-export function NavMain({ items }: { items: NavItem[] }) {
-  const renderNavItem = (item: NavItem, level: number = 0) => {
+export function NavMain({ items }: { items: NavGroup[] }) {
+  const renderNavItem = (item: NavGroup, level: number = 0) => {
     const hasItems = item.items && item.items.length > 0;
     const isFirstLevel = level === 0;
 
