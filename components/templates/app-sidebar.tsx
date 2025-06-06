@@ -47,76 +47,81 @@ const data = {
   ],
   navMain: [
     {
-      title: 'Huisstijl',
-      url: '/huisstijl',
-      icon: Palette,
-      isActive: false,
-    },
-    {
-      title: 'Examples',
-      url: '/voorbeelden',
-      icon: Code,
-      isActive: true,
+      label: 'Boilerplate',
       items: [
         {
-          title: 'RJSF Form',
-          url: '/voorbeelden/rjsf',
-          icon: FormInput,
+          title: 'Huisstijl',
+          url: '/huisstijl',
+          icon: Palette,
+          isActive: false,
+        },
+        {
+          title: 'Examples',
+          url: '/voorbeelden',
+          icon: Code,
+          isActive: true,
           items: [
             {
-              title: 'Standard',
-              url: '/voorbeelden/rjsf/standard',
+              title: 'RJSF Form',
+              url: '/voorbeelden/rjsf',
+              icon: FormInput,
+              items: [
+                {
+                  title: 'Standard',
+                  url: '/voorbeelden/rjsf/standard',
+                },
+                {
+                  title: 'Variables',
+                  url: '/voorbeelden/rjsf/env-properties',
+                },
+              ],
             },
             {
-              title: 'Variables',
-              url: '/voorbeelden/rjsf/env-properties',
+              title: 'Badge',
+              url: '/voorbeelden/badge',
+              icon: Tag,
+            },
+            {
+              title: 'Button',
+              url: '/voorbeelden/button',
+              icon: SquarePlay,
+            },
+            {
+              title: 'Card',
+              url: '/voorbeelden/card',
+              icon: LayoutGrid,
+            },
+            {
+              title: 'Loading Screen',
+              url: '/voorbeelden/skeleton',
+              icon: SquareTerminal,
+            },
+            {
+              title: 'Form Components',
+              url: '/voorbeelden/form',
+              icon: ClipboardEdit,
+            },
+            {
+              title: 'Alert',
+              url: '/voorbeelden/alert',
+              icon: AlertTriangle,
+            },
+            {
+              title: 'Alert Dialog',
+              url: '/voorbeelden/alert-dialog',
+              icon: AlertCircle,
+            },
+            {
+              title: 'Notification (Sonner)',
+              url: '/voorbeelden/sonner',
+              icon: Bell,
+            },
+            {
+              title: 'Sheet',
+              url: '/voorbeelden/sheet',
+              icon: Command,
             },
           ],
-        },
-        {
-          title: 'Badge',
-          url: '/voorbeelden/badge',
-          icon: Tag,
-        },
-        {
-          title: 'Button',
-          url: '/voorbeelden/button',
-          icon: SquarePlay,
-        },
-        {
-          title: 'Card',
-          url: '/voorbeelden/card',
-          icon: LayoutGrid,
-        },
-        {
-          title: 'Loading Screen',
-          url: '/voorbeelden/skeleton',
-          icon: SquareTerminal,
-        },
-        {
-          title: 'Form Components',
-          url: '/voorbeelden/form',
-          icon: ClipboardEdit,
-        },
-        {
-          title: 'Alert',
-          url: '/voorbeelden/alert',
-          icon: AlertTriangle,
-        },
-        {
-          title: 'Alert Dialog',
-          url: '/voorbeelden/alert-dialog',
-          icon: AlertCircle,
-        },
-        {
-          title: 'Notification (Sonner)',
-          url: '/voorbeelden/sonner',
-          icon: Bell,
-        },
-        {
-          title: 'Sheet',
-          url: '/voorbeelden/sheet',
-          icon: Command,
         },
       ],
     },
@@ -144,7 +149,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <ProjectSwitcher projects={data.projects} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain groups={data.navMain} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter className="flex items-center justify-between px-4">
